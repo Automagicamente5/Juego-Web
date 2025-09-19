@@ -60,6 +60,7 @@ function agregarCasilla(numFila, numCol) {
 function generarFilaHtml(numFila) {
     return `<div id="fila-${numFila}" class="fila"></div>`;
 }
+    let contador = 0;
 
 /**
  * Detecta la presion de alguna tecla
@@ -67,6 +68,8 @@ function generarFilaHtml(numFila) {
  */
 function manejarEventoTeclado(evento) {
     const caracterPresionado = evento.key;
+    document.querySelector("#cantidad-turnos").innerHTML++;
+    
     actualizarCasillaJugadorHTML(SIMB_CASILLA_DEF);
     actualizarPosJugador(caracterPresionado);
     actualizarCasillaJugadorHTML(jugador.simbolo);

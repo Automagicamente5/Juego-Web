@@ -22,3 +22,7 @@ body{
 p{
     margin: 0;
 }
+
+#info-cantidad-turnos{
+    text-align: center;
+}
