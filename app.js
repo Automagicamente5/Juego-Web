@@ -14,12 +14,19 @@ const jugador = {
     simbolo: "🤖"
 }
 
+const item = {
+    posX: 3,
+    posY: 4,
+    simbolo: "🟨"
+}
+
 /**
  * Inicia el programa de la app web
  */
 function main() {
     crearTablero();
     document.addEventListener('keydown', manejarEventoTeclado);
+    actualizarCasillaHTML(item.posX, item.posY, item.simbolo);
 }
 
 main();
@@ -35,7 +42,7 @@ function crearTablero() {
             agregarCasilla(fila, col);
         }
     }
-    actualizarCasillaJugadorHTML(jugador.simbolo);
+    actualizarCasillaHTML(jugador.posX, jugador.posY, jugador.simbolo);
 }
 
 
@@ -70,9 +77,9 @@ function manejarEventoTeclado(evento) {
     const caracterPresionado = evento.key;
     document.querySelector("#cantidad-turnos").innerHTML++;
     
-    actualizarCasillaJugadorHTML(SIMB_CASILLA_DEF);
+    actualizarCasillaHTML(SIMB_CASILLA_DEF);
     actualizarPosJugador(caracterPresionado);
-    actualizarCasillaJugadorHTML(jugador.simbolo);
+    actualizarCasillaHTML(jugador.simbolo);
 }
 
 
@@ -98,9 +105,11 @@ function actualizarPosJugador(caracterPresionado) {
 }
 
 /**
- * Actualiza la casilla del jugador con el nuevoSimbolo
- * @param {String} nuevoSimbolo a usar para actualizar la casilla del jugador
+ * Actualiza la casilla con el nuevoSimbolo
+ * @param {Number} posX de la casilla
+ * @param {Number} posY de la casilla
+ * @param {String} nuevoSimbolo a actualizar
  */
-function actualizarCasillaJugadorHTML(nuevoSimbolo = "def") {
-    document.querySelector(`#pos-${jugador.posY}-${jugador.posX}>p`).innerHTML = nuevoSimbolo;
+function actualizarCasillaHTML(posX, posY, nuevoSimbolo = "def") {
+    document.querySelector(`#pos-${posY}-${posX}>p`).innerHTML = nuevoSimbolo;
 }
