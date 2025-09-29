@@ -17,17 +17,41 @@ const jugador = {
 const item = {
     posX: 3,
     posY: 4,
-    simbolo: "🟨"
+    simbolo: "🟨",
+    usado: false
 }
+
 
 /**
  * Inicia el programa de la app web
  */
 function main() {
+    let idTimeout=null;
+    let tiempoActivacion = 0;
     crearTablero();
     document.addEventListener('keydown', manejarEventoTeclado);
     actualizarCasillaHTML(item.posX, item.posY, item.simbolo);
+
+    setInterval(() => {
+        if ((jugador.posX === item.posX && jugador.posY === item.posY) && !idTimeout && !item.usado) {
+            idTimeout = setTimeout(() => {
+                console.log("activando");//cualquier algoritmo
+                idTimeout=null;
+                tiempoActivacion=0;
+                item.usado = true;
+            }, 3000);
+        } else if(idTimeout && (jugador.posX !== item.posX || jugador.posY !== item.posY)){
+            console.log("fuera de casilla especial");//cualquier algoritmo
+            clearInterval(idTimeout);
+            idTimeout=null;
+            tiempoActivacion=0;
+        }else if(idTimeout){
+            tiempoActivacion++;
+            //console.log(tiempoActivacion);
+        }
+    }, 1000);
 }
+
 
 main();
 
@@ -67,7 +91,7 @@ function agregarCasilla(numFila, numCol) {
 function generarFilaHtml(numFila) {
     return `<div id="fila-${numFila}" class="fila"></div>`;
 }
-    let contador = 0;
+let contador = 0;
 
 /**
  * Detecta la presion de alguna tecla
@@ -76,10 +100,10 @@ function generarFilaHtml(numFila) {
 function manejarEventoTeclado(evento) {
     const caracterPresionado = evento.key;
     document.querySelector("#cantidad-turnos").innerHTML++;
-    
-    actualizarCasillaHTML(SIMB_CASILLA_DEF);
+
+    actualizarCasillaHTML(jugador.posX, jugador.posY, SIMB_CASILLA_DEF);
     actualizarPosJugador(caracterPresionado);
-    actualizarCasillaHTML(jugador.simbolo);
+    actualizarCasillaHTML(jugador.posX, jugador.posY, jugador.simbolo);
 }
 
 
