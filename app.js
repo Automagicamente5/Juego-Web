@@ -7,6 +7,7 @@ const MOVIMIENTO_ARRIBA = "w";
 const MOVIMIENTO_IZQUIERDA = "a";
 const MOVIMIENTO_ABAJO = "s";
 const MOVIMIENTO_DERECHA = "d";
+const TIEMPO_INTERVALO_JUEGO = 1000;
 
 const jugador = {
     posX: 0,
@@ -21,39 +22,76 @@ const item = {
     usado: false
 }
 
+const juego = {
+    idTimeout : null,
+    tiempoActivacion : 0,
+}
 
 /**
  * Inicia el programa de la app web
  */
 function main() {
-    let idTimeout=null;
-    let tiempoActivacion = 0;
     crearTablero();
     document.addEventListener('keydown', manejarEventoTeclado);
     actualizarCasillaHTML(item.posX, item.posY, item.simbolo);
-
-    setInterval(() => {
-        if ((jugador.posX === item.posX && jugador.posY === item.posY) && !idTimeout && !item.usado) {
-            idTimeout = setTimeout(() => {
-                console.log("activando");//cualquier algoritmo
-                idTimeout=null;
-                tiempoActivacion=0;
-                item.usado = true;
-            }, 3000);
-        } else if(idTimeout && (jugador.posX !== item.posX || jugador.posY !== item.posY)){
-            console.log("fuera de casilla especial");//cualquier algoritmo
-            clearInterval(idTimeout);
-            idTimeout=null;
-            tiempoActivacion=0;
-        }else if(idTimeout){
-            tiempoActivacion++;
-            //console.log(tiempoActivacion);
-        }
-    }, 1000);
+    iniciarIntervaloJuego();
 }
 
 
 main();
+
+
+/**
+ * Inicia el intervalo para verificaciones del juego
+ */
+function iniciarIntervaloJuego() {
+    setInterval(() => {
+        if (!item.usado) {
+            if (!juego.idTimeout) {
+                iniciarActivacionCasillaEspecial();
+            } else {
+                evaluarActivacionCasillaEspecial();
+            }
+        }
+    }, TIEMPO_INTERVALO_JUEGO);
+}
+
+/**
+ * Evalua el estado de activacion para la casilla especial
+ */
+function evaluarActivacionCasillaEspecial() {
+    if (!verificarPosEnCasillaEspecial()) {
+        console.log("fuera de casilla especial"); //cualquier algoritmo
+        clearInterval(juego.idTimeout);
+        juego.idTimeout = null;
+        juego.tiempoActivacion = 0;
+    } else {
+        juego.tiempoActivacion++;
+        console.log(juego.tiempoActivacion);
+    }
+}
+
+/**
+ * Inicia la activacion de la casilla especial
+ */
+function iniciarActivacionCasillaEspecial() {
+    if (verificarPosEnCasillaEspecial()) {
+        juego.idTimeout = setTimeout(() => {
+            console.log("activando"); //cualquier algoritmo
+            juego.idTimeout = null;
+            juego.tiempoActivacion = 0;
+            item.usado = true;
+        }, 3000);
+    }
+}
+
+/**
+ * Revisa si las coordenadas del jugador son iguales a las del item especial
+ * @returns true si el jugador esta en la casilla especial, false caso contrario
+ */
+function verificarPosEnCasillaEspecial() {
+    return jugador.posX === item.posX && jugador.posY === item.posY;
+}
 
 /**
  * Crea el tablero en la app web
@@ -91,7 +129,8 @@ function agregarCasilla(numFila, numCol) {
 function generarFilaHtml(numFila) {
     return `<div id="fila-${numFila}" class="fila"></div>`;
 }
-let contador = 0;
+
+
 
 /**
  * Detecta la presion de alguna tecla
