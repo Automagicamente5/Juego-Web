@@ -1,4 +1,6 @@
 const ID_TABLERO_HTML = "#tablero";
+const ID_P_INFO_TIEMPO_ACTIVACION = "#info-tiempo-activacion";
+
 const MAX_FILAS = 10;
 const MAX_COL = 10;
 const SIMB_CASILLA_DEF = "";
@@ -8,7 +10,23 @@ const MOVIMIENTO_IZQUIERDA = "a";
 const MOVIMIENTO_ABAJO = "s";
 const MOVIMIENTO_DERECHA = "d";
 const TIEMPO_INTERVALO_JUEGO = 100;
+const TIEMPO_ACTIVACION_CASILLA = 3000;
+const TIEMPO_REINICIO_INFO_ACTIVACION = 1000;
+
 const SIMB_CASILLA_ACTIVADA = "❇️";
+
+const COLOR_TIEMPO_TXT_DEF = "white";
+const COLOR_TIEMPO_TXT_ACTIVO = "red";
+const COLOR_TIEMPO_TXT_COMPLETADO = "green";
+
+const COLOR_SEG_ACTIVACION_DEF = "";
+
+const INFO_TIEMPO_TXT_DEF = "hidden";
+const INFO_TIEMPO_TXT_ACTIVO = "visible";
+
+
+const TIEMPO_ACTV_CANT_DECIMALES = 4;
+
 
 const jugador = {
     posX: 0,
@@ -48,6 +66,7 @@ const juego = {
  */
 function main() {
     crearTablero();
+    agregarEntidadesHTML();
     document.addEventListener('keydown', manejarEventoTeclado);
 }
 
@@ -57,73 +76,96 @@ main();
 
 /**
  * Inicia la activacion de la casilla especial
+ * @param {Object} casillaEspecial a activar
  */
-function iniciarActivacionCasillaEspecial(casillaEspecial) {
-    if (verificarPosEnCasillaEspecial(casillaEspecial) && !juego.idIntervalo) {
-        document.querySelector("#info-tiempo-activacion").style.visibility = "visible";
-        document.querySelector("#info-tiempo-activacion>span").style.color = "red";
+function iniciarActivacionDe(casillaEspecial) {
+    if (verificarPosDeJugadorEn(casillaEspecial) && !juego.idIntervalo) {
+        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION).style.visibility = INFO_TIEMPO_TXT_ACTIVO;
+        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION+">span").style.color = COLOR_TIEMPO_TXT_ACTIVO;
 
-        iniciarIntervaloJuego(casillaEspecial);
-        juego.idTimeout = setTimeout(() => {
-            console.log("activando"); //cualquier algoritmo
-            clearInterval(juego.idIntervalo);
-            juego.idIntervalo = null;
-
-            juego.idTimeout = null;
-            juego.tiempoActivacion = 0;
-            document.querySelector("#info-tiempo-activacion").style.color = "green";
-            document.querySelector("#info-tiempo-activacion>span").style.color = "";
-            setTimeout(() => {
-                document.querySelector("#info-tiempo-activacion>span").innerHTML = juego.tiempoActivacion.toFixed(2);
-                document.querySelector("#info-tiempo-activacion").style.visibility = "hidden";
-                document.querySelector("#info-tiempo-activacion").style.color = "white";
-            }, 1000);
-            casillaEspecial.usado = true;
-            casillaEspecial.simbolo = SIMB_CASILLA_ACTIVADA;
-        }, 3000);
+        iniciarRevisionDe(casillaEspecial);
+        juego.idTimeout = setTimeout(activarCasilla, TIEMPO_ACTIVACION_CASILLA, casillaEspecial);
     }
 }
 
+
 /**
- * Inicia el intervalo para verificaciones del juego
+ * Activa la casilla especial
+ * @param {Object} casillaEspecial a activar
  */
-function iniciarIntervaloJuego(casillaEspecial) {
+function activarCasilla(casillaEspecial) {
+    const pInfoTiempoActivacion = document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION);
+    const spanTiempoActivacion = document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION+">span");
+    reiniciarEsadosActivacion();
+    pInfoTiempoActivacion.style.color = COLOR_TIEMPO_TXT_COMPLETADO;
+    spanTiempoActivacion.style.color = COLOR_SEG_ACTIVACION_DEF;
+    setTimeout(reiniciarInfoTiempoActivacionHTML, TIEMPO_REINICIO_INFO_ACTIVACION, pInfoTiempoActivacion, spanTiempoActivacion);
+    casillaEspecial.usado = true;
+    casillaEspecial.simbolo = SIMB_CASILLA_ACTIVADA;
+}
+
+/**
+ * reinicia la informacion del timepo de activacion en el HTML
+ */
+function reiniciarInfoTiempoActivacionHTML(pInfoTiempoActivacion, spanTiempoActivacion) {
+    spanTiempoActivacion.innerHTML = juego.tiempoActivacion.toFixed(TIEMPO_ACTV_CANT_DECIMALES);
+    pInfoTiempoActivacion.style.visibility = INFO_TIEMPO_TXT_DEF;
+    pInfoTiempoActivacion.style.color = COLOR_TIEMPO_TXT_DEF;
+}
+
+/**
+ * Inicia la revision para la activacion de la casilla especial
+ * @param {Object} casillaEspecial a revisar
+ */
+function iniciarRevisionDe(casillaEspecial) {
     juego.idIntervalo = setInterval(() => {
         if (!casillaEspecial.usado) {
             if (juego.idTimeout) {
                 evaluarActivacionCasillaEspecial(casillaEspecial);
             }
         }
-        console.log("asdsa");
-
     }, TIEMPO_INTERVALO_JUEGO);
 }
 
 /**
  * Evalua el estado de activacion para la casilla especial
+ * @param {Object} casillaEspecial a activar
  */
 function evaluarActivacionCasillaEspecial(casillaEspecial) {
-    if (!verificarPosEnCasillaEspecial(casillaEspecial)) {
-        console.log("fuera de casilla especial"); //cualquier algoritmo
-        document.querySelector("#info-tiempo-activacion").style.visibility = "hidden";
+    if (!verificarPosDeJugadorEn(casillaEspecial)) {
+        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION).style.visibility = INFO_TIEMPO_TXT_DEF;
         clearTimeout(juego.idTimeout);
-        clearInterval(juego.idIntervalo);
-        juego.idTimeout = null;
-        juego.idIntervalo = null;
-        juego.tiempoActivacion = 0;
+        reiniciarEsadosActivacion();
     } else {
         juego.tiempoActivacion += TIEMPO_INTERVALO_JUEGO / 1000;
-        document.querySelector("#info-tiempo-activacion>span").innerHTML = juego.tiempoActivacion.toFixed(2);
+        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION+">span").innerHTML = reducirDecimalesTiempoActivacion();
     }
 }
 
 
+/**
+ * Reinicia los estados para la activacion de una casilla especial
+ */
+function reiniciarEsadosActivacion() {
+    clearInterval(juego.idIntervalo);
+    juego.idTimeout = null;
+    juego.idIntervalo = null;
+    juego.tiempoActivacion = 0;
+}
+
+/**
+ * Reduce a la cantidad de decimales del tiempo de activacion
+ * @returns tiempo de activacion con los decimales limitados
+ */
+function reducirDecimalesTiempoActivacion() {
+    return juego.tiempoActivacion.toFixed(TIEMPO_ACTV_CANT_DECIMALES);
+}
 
 /**
  * Revisa si las coordenadas del jugador son iguales a las del item especial
  * @returns true si el jugador esta en la casilla especial, false caso contrario
  */
-function verificarPosEnCasillaEspecial(casillaEspecial) {
+function verificarPosDeJugadorEn(casillaEspecial) {
     return jugador.posX === casillaEspecial.posX && jugador.posY === casillaEspecial.posY;
 }
 
@@ -138,7 +180,6 @@ function crearTablero() {
             agregarCasilla(fila, col);
         }
     }
-    agregarEntidades();
 }
 
 
@@ -173,24 +214,29 @@ function generarFilaHtml(numFila) {
 function manejarEventoTeclado(evento) {
     const caracterPresionado = evento.key;
     document.querySelector("#cantidad-turnos").innerHTML++;
-
     actualizarCasillaHTML(jugador.posX, jugador.posY, SIMB_CASILLA_DEF);
     actualizarPosJugador(caracterPresionado);
-
-    if (!casilla1.usado) {
-        iniciarActivacionCasillaEspecial(casilla1);
-    }else if(!casilla2.usado){
-        iniciarActivacionCasillaEspecial(casilla2);
-    }else if(!casilla3.usado){
-        iniciarActivacionCasillaEspecial(casilla3);
-    }
-
-
-    agregarEntidades();
+    evaluarActivacionCasillasEspeciales();
+    agregarEntidadesHTML();
 }
 
+/**
+ * Evalua la activacion de las casillas especiales
+ */
+function evaluarActivacionCasillasEspeciales() {
+    if (!casilla1.usado) {
+        iniciarActivacionDe(casilla1);
+    } else if (!casilla2.usado) {
+        iniciarActivacionDe(casilla2);
+    } else if (!casilla3.usado) {
+        iniciarActivacionDe(casilla3);
+    }
+}
 
-function agregarEntidades() {
+/**
+ * Agrega entidades al tablero HTML
+ */
+function agregarEntidadesHTML() {
     actualizarCasillaHTML(casilla1.posX, casilla1.posY, casilla1.simbolo);
     actualizarCasillaHTML(casilla2.posX, casilla2.posY, casilla2.simbolo);
     actualizarCasillaHTML(casilla3.posX, casilla3.posY, casilla3.simbolo);
