@@ -7,7 +7,8 @@ const MOVIMIENTO_ARRIBA = "w";
 const MOVIMIENTO_IZQUIERDA = "a";
 const MOVIMIENTO_ABAJO = "s";
 const MOVIMIENTO_DERECHA = "d";
-const TIEMPO_INTERVALO_JUEGO = 1000;
+const TIEMPO_INTERVALO_JUEGO = 100;
+const SIMB_CASILLA_ACTIVADA = "❇️";
 
 const jugador = {
     posX: 0,
@@ -33,7 +34,6 @@ const juego = {
 function main() {
     crearTablero();
     document.addEventListener('keydown', manejarEventoTeclado);
-    actualizarCasillaHTML(item.posX, item.posY, item.simbolo);
     iniciarIntervaloJuego();
 }
 
@@ -62,12 +62,13 @@ function iniciarIntervaloJuego() {
 function evaluarActivacionCasillaEspecial() {
     if (!verificarPosEnCasillaEspecial()) {
         console.log("fuera de casilla especial"); //cualquier algoritmo
+        document.querySelector("#info-tiempo-activacion").style.visibility = "hidden";
         clearInterval(juego.idTimeout);
         juego.idTimeout = null;
         juego.tiempoActivacion = 0;
     } else {
-        juego.tiempoActivacion++;
-        console.log(juego.tiempoActivacion);
+        juego.tiempoActivacion+= TIEMPO_INTERVALO_JUEGO/1000;
+        document.querySelector("#info-tiempo-activacion>span").innerHTML = juego.tiempoActivacion.toFixed(2);
     }
 }
 
@@ -76,11 +77,13 @@ function evaluarActivacionCasillaEspecial() {
  */
 function iniciarActivacionCasillaEspecial() {
     if (verificarPosEnCasillaEspecial()) {
+        document.querySelector("#info-tiempo-activacion").style.visibility = "visible";
         juego.idTimeout = setTimeout(() => {
             console.log("activando"); //cualquier algoritmo
             juego.idTimeout = null;
             juego.tiempoActivacion = 0;
             item.usado = true;
+            item.simbolo = SIMB_CASILLA_ACTIVADA;
         }, 3000);
     }
 }
@@ -104,6 +107,7 @@ function crearTablero() {
             agregarCasilla(fila, col);
         }
     }
+    actualizarCasillaHTML(item.posX, item.posY, item.simbolo);
     actualizarCasillaHTML(jugador.posX, jugador.posY, jugador.simbolo);
 }
 
@@ -142,6 +146,7 @@ function manejarEventoTeclado(evento) {
 
     actualizarCasillaHTML(jugador.posX, jugador.posY, SIMB_CASILLA_DEF);
     actualizarPosJugador(caracterPresionado);
+    actualizarCasillaHTML(item.posX, item.posY, item.simbolo);
     actualizarCasillaHTML(jugador.posX, jugador.posY, jugador.simbolo);
 }
 
