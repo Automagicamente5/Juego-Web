@@ -30,30 +30,39 @@ const TIEMPO_ACTV_CANT_DECIMALES = 4;
 
 const jugador = {
     posX: 0,
-    posY: 0,
+    posY: 4,
     simbolo: "🤖"
 }
 
-const casilla1 = {
+const enemigo = {
     posX: 3,
+    posY: 9,
+    simbolo: "👽",
+    dirY: -1,
+    etapa: 1,
+    idIntervalo: null,
+}
+
+const casilla1 = {
+    posX: 9,
     posY: 4,
     simbolo: "🟨",
-    usado: false
+    usado: false,
 }
 
 const casilla2 = {
-    posX: 5,
-    posY: 4,
+    posX: 0,
+    posY: 0,
     simbolo: "🟪",
     usado: false
 }
 
-const casilla3 = {
+/* const casilla3 = {
     posX: 7,
     posY: 7,
     simbolo: "🟦",
     usado: false
-}
+} */
 
 const juego = {
     idTimeout: null,
@@ -68,6 +77,38 @@ function main() {
     crearTablero();
     agregarEntidadesHTML();
     document.addEventListener('keydown', manejarEventoTeclado);
+    enemigo.idIntervalo = setInterval(() => {
+        actualizarCasillaHTML(enemigo.posX, enemigo.posY, SIMB_CASILLA_DEF);
+        switch (enemigo.etapa) {
+            case 1:
+                enemigo.posY += enemigo.dirY;
+                break;
+            case 2:
+                enemigo.posY -= enemigo.dirY;
+                break;
+            case 3:
+                let difY = enemigo.posY - jugador.posY;
+                let difX = enemigo.posX - jugador.posX;
+
+                if (difY) {
+                    enemigo.posY += (difY > 0) ? -1 : 1;
+                }
+                if (difX) {
+                    enemigo.posX += (difX > 0) ? -1 : 1;
+                }
+        }
+        actualizarCasillaHTML(enemigo.posX, enemigo.posY, enemigo.simbolo);
+        if (enemigo.posY === 0 || enemigo.posY === 9) {
+            enemigo.dirY *= -1;
+        }
+        if (enemigo.posX === jugador.posX && enemigo.posY === jugador.posY) {
+            //alert("perdiste! :(");
+            document.removeEventListener('keydown', manejarEventoTeclado);
+            clearInterval(enemigo.idIntervalo);
+            document.querySelector("h1").innerHTML = "GAME OVER :(";
+            document.querySelector("h1").style.color = "red";
+        }
+    }, 1000);
 }
 
 
@@ -81,10 +122,13 @@ main();
 function iniciarActivacionDe(casillaEspecial) {
     if (verificarPosDeJugadorEn(casillaEspecial) && !juego.idIntervalo) {
         document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION).style.visibility = INFO_TIEMPO_TXT_ACTIVO;
-        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION+">span").style.color = COLOR_TIEMPO_TXT_ACTIVO;
+        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION + ">span").style.color = COLOR_TIEMPO_TXT_ACTIVO;
 
         iniciarRevisionDe(casillaEspecial);
         juego.idTimeout = setTimeout(activarCasilla, TIEMPO_ACTIVACION_CASILLA, casillaEspecial);
+        if (enemigo.etapa === 2) {
+            enemigo.etapa++;
+        }
     }
 }
 
@@ -95,13 +139,23 @@ function iniciarActivacionDe(casillaEspecial) {
  */
 function activarCasilla(casillaEspecial) {
     const pInfoTiempoActivacion = document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION);
-    const spanTiempoActivacion = document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION+">span");
+    const spanTiempoActivacion = document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION + ">span");
     reiniciarEsadosActivacion();
     pInfoTiempoActivacion.style.color = COLOR_TIEMPO_TXT_COMPLETADO;
     spanTiempoActivacion.style.color = COLOR_SEG_ACTIVACION_DEF;
     setTimeout(reiniciarInfoTiempoActivacionHTML, TIEMPO_REINICIO_INFO_ACTIVACION, pInfoTiempoActivacion, spanTiempoActivacion);
     casillaEspecial.usado = true;
     casillaEspecial.simbolo = SIMB_CASILLA_ACTIVADA;
+    enemigo.etapa++;
+    if (enemigo.etapa === 2) {
+        actualizarCasillaHTML(enemigo.posX, enemigo.posY, SIMB_CASILLA_DEF);
+        enemigo.posX = 7;
+        actualizarCasillaHTML(enemigo.posX, enemigo.posY, enemigo.simbolo);
+    } else if (enemigo.etapa > 3) {
+        clearInterval(enemigo.idIntervalo);
+        document.querySelector("h1").innerHTML = "GANASTE! :D";
+        document.querySelector("h1").style.color = "green";
+    }
 }
 
 /**
@@ -138,7 +192,7 @@ function evaluarActivacionCasillaEspecial(casillaEspecial) {
         reiniciarEsadosActivacion();
     } else {
         juego.tiempoActivacion += TIEMPO_INTERVALO_JUEGO / 1000;
-        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION+">span").innerHTML = reducirDecimalesTiempoActivacion();
+        document.querySelector(ID_P_INFO_TIEMPO_ACTIVACION + ">span").innerHTML = reducirDecimalesTiempoActivacion();
     }
 }
 
@@ -228,9 +282,9 @@ function evaluarActivacionCasillasEspeciales() {
         iniciarActivacionDe(casilla1);
     } else if (!casilla2.usado) {
         iniciarActivacionDe(casilla2);
-    } else if (!casilla3.usado) {
+    } /* else if (!casilla3.usado) {
         iniciarActivacionDe(casilla3);
-    }
+    } */
 }
 
 /**
@@ -239,8 +293,9 @@ function evaluarActivacionCasillasEspeciales() {
 function agregarEntidadesHTML() {
     actualizarCasillaHTML(casilla1.posX, casilla1.posY, casilla1.simbolo);
     actualizarCasillaHTML(casilla2.posX, casilla2.posY, casilla2.simbolo);
-    actualizarCasillaHTML(casilla3.posX, casilla3.posY, casilla3.simbolo);
+    //actualizarCasillaHTML(casilla3.posX, casilla3.posY, casilla3.simbolo);
     actualizarCasillaHTML(jugador.posX, jugador.posY, jugador.simbolo);
+    actualizarCasillaHTML(enemigo.posX, enemigo.posY, enemigo.simbolo);
 }
 
 /**
