@@ -27,6 +27,16 @@ const INFO_TIEMPO_TXT_ACTIVO = "visible";
 
 const TIEMPO_ACTV_CANT_DECIMALES = 4;
 
+const MSJ_FINAL_NEGATIVO = "GAME OVER :(";
+const COLOR_MSJ_NEGATIVO = "red";
+
+const MSJ_FINAL_POSITIVO = "GANASTE! :D";
+const COLOR_MSJ_POSITIVO = "green";
+
+
+const POS_HORIZONTAL_ENEMIGO_ETAPA_2 = 7;
+const POS_VERTICAL_ENEMIGO_ETAPA_2 = 4;
+
 
 const jugador = {
     posX: 0,
@@ -41,7 +51,11 @@ const enemigo = {
     dirY: -1,
     etapa: 1,
     idIntervalo: null,
+    velocidad: 1000,
+    saltosX: 1,
+    saltosY: 1,
 }
+
 
 const casilla1 = {
     posX: 9,
@@ -57,18 +71,12 @@ const casilla2 = {
     usado: false
 }
 
-/* const casilla3 = {
-    posX: 7,
-    posY: 7,
-    simbolo: "🟦",
-    usado: false
-} */
-
 const juego = {
     idTimeout: null,
     idIntervalo: null,
     tiempoActivacion: 0,
 }
+
 
 /**
  * Inicia el programa de la app web
@@ -77,43 +85,92 @@ function main() {
     crearTablero();
     agregarEntidadesHTML();
     document.addEventListener('keydown', manejarEventoTeclado);
-    enemigo.idIntervalo = setInterval(() => {
-        actualizarCasillaHTML(enemigo.posX, enemigo.posY, SIMB_CASILLA_DEF);
-        switch (enemigo.etapa) {
-            case 1:
-                enemigo.posY += enemigo.dirY;
-                break;
-            case 2:
-                enemigo.posY -= enemigo.dirY;
-                break;
-            case 3:
-                let difY = enemigo.posY - jugador.posY;
-                let difX = enemigo.posX - jugador.posX;
-
-                if (difY) {
-                    enemigo.posY += (difY > 0) ? -1 : 1;
-                }
-                if (difX) {
-                    enemigo.posX += (difX > 0) ? -1 : 1;
-                }
-        }
-        actualizarCasillaHTML(enemigo.posX, enemigo.posY, enemigo.simbolo);
-        if (enemigo.posY === 0 || enemigo.posY === 9) {
-            enemigo.dirY *= -1;
-        }
-        if (enemigo.posX === jugador.posX && enemigo.posY === jugador.posY) {
-            //alert("perdiste! :(");
-            document.removeEventListener('keydown', manejarEventoTeclado);
-            clearInterval(enemigo.idIntervalo);
-            document.querySelector("h1").innerHTML = "GAME OVER :(";
-            document.querySelector("h1").style.color = "red";
-        }
-    }, 1000);
+    enemigo.idIntervalo = setInterval(activarEnemigo, enemigo.velocidad);
 }
 
 
 main();
 
+/**
+ * Activa el comportamiento del enemigo
+ */
+function activarEnemigo() {
+    actualizarCasillaHTML(enemigo.posX, enemigo.posY, SIMB_CASILLA_DEF);
+    activarEtapa();
+    actualizarCasillaHTML(enemigo.posX, enemigo.posY, enemigo.simbolo);
+    movimientoVerticalLimitado();
+    verificarEncontroJugador();
+}
+
+
+/**
+ * Verifica si encontro al jugador
+ */
+function verificarEncontroJugador() {
+    if (enemigo.posX === jugador.posX && enemigo.posY === jugador.posY) {
+        document.removeEventListener('keydown', manejarEventoTeclado);
+        clearInterval(enemigo.idIntervalo);
+        clearInterval(juego.idTimeout);
+        clearInterval(juego.idIntervalo);
+        document.querySelector("h1").innerHTML = MSJ_FINAL_NEGATIVO;
+        document.querySelector("h1").style.color = COLOR_MSJ_NEGATIVO;
+    }
+}
+
+/**
+ * Limita el movimiento vertical del enemigo
+ */
+function movimientoVerticalLimitado() {
+    if (enemigo.posY === 0 || enemigo.posY === MAX_FILAS-1) {
+        enemigo.dirY *= -1;
+    }
+}
+
+const MAX_MOVIMIENTO_ETAPA_2 = 8;
+const MIN_MOVIMENTO_ETAPA_2 = 1;
+/**
+ * Activa la etapa actual del enemigo
+ */
+function activarEtapa() {
+    switch (enemigo.etapa) {
+        case 1:
+            enemigo.posY += enemigo.dirY;
+            break;
+        case 2:
+            //enemigo.posY -= enemigo.dirY;
+            enemigo.posY = generarPosAleatoria();
+            enemigo.posX = generarPosAleatoria();
+            break;
+        case 3:
+            activarEtapa3();
+    }
+}
+
+/**
+ * Genera una coordenada aleatoria
+ * @returns una coordenada aleatoria
+ */
+function generarPosAleatoria() {
+    return Math.floor(Math.random() * (MAX_MOVIMIENTO_ETAPA_2 - MIN_MOVIMENTO_ETAPA_2 + 1) + MIN_MOVIMENTO_ETAPA_2);
+}
+
+/**
+ * Activa la etapa 3 del enemigo
+ */
+function activarEtapa3() {
+    let difY = enemigo.posY - jugador.posY;
+    let difX = enemigo.posX - jugador.posX;
+
+    enemigo.saltosY = Math.abs(difY) > 1 ? 2 : 1;
+    enemigo.saltosX = Math.abs(difX) > 1 ? 2 : 1;
+
+    if (difY) {
+        enemigo.posY += (difY > 0) ? -enemigo.saltosY : enemigo.saltosY;
+    }
+    if (difX) {
+        enemigo.posX += (difX > 0) ? -enemigo.saltosX : enemigo.saltosX;
+    }
+}
 
 /**
  * Inicia la activacion de la casilla especial
@@ -147,14 +204,22 @@ function activarCasilla(casillaEspecial) {
     casillaEspecial.usado = true;
     casillaEspecial.simbolo = SIMB_CASILLA_ACTIVADA;
     enemigo.etapa++;
+    modificarEnemigo();
+}
+
+/**
+ * Modifica al enemigo dependiendo de la etapa actual
+ */
+function modificarEnemigo() {
     if (enemigo.etapa === 2) {
         actualizarCasillaHTML(enemigo.posX, enemigo.posY, SIMB_CASILLA_DEF);
-        enemigo.posX = 7;
+        enemigo.posX = POS_HORIZONTAL_ENEMIGO_ETAPA_2;
+        enemigo.posY = POS_VERTICAL_ENEMIGO_ETAPA_2;
         actualizarCasillaHTML(enemigo.posX, enemigo.posY, enemigo.simbolo);
     } else if (enemigo.etapa > 3) {
-        clearInterval(enemigo.idIntervalo);
-        document.querySelector("h1").innerHTML = "GANASTE! :D";
-        document.querySelector("h1").style.color = "green";
+        clearInterval(enemigo.idIntervalo);d
+        document.querySelector("h1").innerHTML = MSJ_FINAL_POSITIVO;
+        document.querySelector("h1").style.color = COLOR_MSJ_POSITIVO;
     }
 }
 
@@ -282,9 +347,7 @@ function evaluarActivacionCasillasEspeciales() {
         iniciarActivacionDe(casilla1);
     } else if (!casilla2.usado) {
         iniciarActivacionDe(casilla2);
-    } /* else if (!casilla3.usado) {
-        iniciarActivacionDe(casilla3);
-    } */
+    }
 }
 
 /**
@@ -293,7 +356,6 @@ function evaluarActivacionCasillasEspeciales() {
 function agregarEntidadesHTML() {
     actualizarCasillaHTML(casilla1.posX, casilla1.posY, casilla1.simbolo);
     actualizarCasillaHTML(casilla2.posX, casilla2.posY, casilla2.simbolo);
-    //actualizarCasillaHTML(casilla3.posX, casilla3.posY, casilla3.simbolo);
     actualizarCasillaHTML(jugador.posX, jugador.posY, jugador.simbolo);
     actualizarCasillaHTML(enemigo.posX, enemigo.posY, enemigo.simbolo);
 }
